@@ -66,10 +66,11 @@ class VideoServices:
         return output_video_path
     
     def convert_bbox_obj_to_xyxy(self, bbox):
-        x = bbox['x']
-        y = bbox['y']
-        w = bbox['width']
-        h = bbox['height']
+        x,y,w,h = bbox
+        # x = bbox['x']
+        # y = bbox['y']
+        # w = bbox['width']
+        # h = bbox['height']
 
         x2 = x + w
         y2 = y + h

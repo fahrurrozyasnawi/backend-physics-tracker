@@ -32,10 +32,11 @@ def tracking_object(body: BodyTrackObject, task_id):
     
     formula_result = 0
     task_progress[task_id] = 0
+    tracker_service.init_task(task_id)
     try:
         bbox = video_service.convert_bbox_obj_to_xyxy(body.bbox)
         print('bbox',bbox)
-        bboxes, keypoints = tracker_service.predict(bbox, task_progress=task_progress[task_id])
+        bboxes, keypoints = tracker_service.predict(bbox)
         tracker_result = tracker_service.generate_video_result(video_path)
 
         if(body.lessonType == 'viscosity'):

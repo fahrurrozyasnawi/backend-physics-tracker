@@ -8,6 +8,7 @@ class TrackerService:
     def __init__(self, source, imgsz=640, conf=0.25, model='sam2_t.pt'):
         self.model = model
         self.source = source
+        self.task_progress = {}
 
         model_path = os.path.join(get_base_dir(),'app', 'models', 'ml', model)
         overrides = dict(conf=conf, task="segment", mode="predict", imgsz=imgsz, model=model_path)
@@ -16,11 +17,21 @@ class TrackerService:
         mobile_sam = os.path.join(get_base_dir(),'app', 'models', 'ml', 'mobile_sam.pt')
         self.mobile_sam = SAM(mobile_sam)
 
-    def predict(self, bbox, task_progress):
+    def init_task(self, task_id):
+        self.task_id = task_id
+        self.task_progress[task_id] = 0
+
+        return self
+    
+    def get_total_frames(self):
         cap = cv2.VideoCapture(self.source)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         cap.release()
 
+        return total_frames
+
+    def predict(self, bbox):
+        total_frames = self.get_total_frames()
         results = self.predictor(source=self.source, bboxes=bbox, labels=1, stream=True)
         # results = self.mobile_sam.predict(self.source, bboxes=[bbox], labels=1, stream=True)
         print('success', results)
@@ -28,6 +39,7 @@ class TrackerService:
         self.boxes_result = []
         self.keypoints = []
 
+        task_progress = self.task_progress[self.task_id]
         for result in results:
             print('result', result)
             self.boxes_result.append(result.boxes)
