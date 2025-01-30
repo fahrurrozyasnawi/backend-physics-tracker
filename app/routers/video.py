@@ -1,13 +1,13 @@
 import os
 import uuid
-from config.upload_dir import get_static_dir
+from .config.upload_dir import get_static_dir
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from models.api import CustomResponse
-from models.video import BodyExtractFrame, BodyTrackObject
-from services.video import VideoServices
-from services.tracker import TrackerService
-from services.lessons import ViscosityService, PendulumService, ProjectileMotionService
+from .models.api import CustomResponse
+from .models.video import BodyExtractFrame, BodyTrackObject
+from .services.video import VideoServices
+from .services.tracker import TrackerService
+from .services.lessons import ViscosityService, PendulumService, ProjectileMotionService
 
 router = APIRouter(
     prefix='/video',

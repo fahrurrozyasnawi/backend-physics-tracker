@@ -1,4 +1,4 @@
-from models.lessons import ViscosityBodyReq, PendulumBodyReq, ProjectileMotionBodyReq
+from .models.lessons import ViscosityBodyReq, PendulumBodyReq, ProjectileMotionBodyReq
 from scipy.signal import find_peaks
 import numpy as np
 import math

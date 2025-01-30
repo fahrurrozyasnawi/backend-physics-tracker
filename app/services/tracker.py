@@ -2,7 +2,7 @@ import os
 import cv2
 from ultralytics.models.sam import SAM2VideoPredictor
 from ultralytics import SAM
-from config.base_dir import get_base_dir
+from .config.base_dir import get_base_dir
 
 class TrackerService:
     def __init__(self, source, imgsz=640, conf=0.25, model='sam2_t.pt'):
