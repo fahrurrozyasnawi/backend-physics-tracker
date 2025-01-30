@@ -8,6 +8,7 @@ RUN mkdir -p /app/uploads
 
 # Copy the requirements file first (for better caching)
 COPY requirements.txt .
+COPY setup.py .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
