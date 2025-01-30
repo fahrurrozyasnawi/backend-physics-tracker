@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Union
-from .models.lessons import PendulumBodyReq, ProjectileMotionBodyReq, ViscosityBodyReq
+from app.models.lessons import PendulumBodyReq, ProjectileMotionBodyReq, ViscosityBodyReq
 
 class BodyExtractFrame(BaseModel):
     filename: str

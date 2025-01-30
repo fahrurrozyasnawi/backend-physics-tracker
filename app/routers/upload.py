@@ -3,9 +3,9 @@ import shutil
 from typing import Union
 from typing_extensions import Annotated
 
-from .config.upload_dir import get_static_dir
+from app.config.upload_dir import get_static_dir
 from fastapi import APIRouter, UploadFile, File, Path
-from .models.api import CustomResponse
+from app.models.api import CustomResponse
 
 router = APIRouter(
     prefix='/upload',
