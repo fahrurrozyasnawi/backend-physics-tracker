@@ -8,9 +8,6 @@ from app.routers import video, upload
 
 load_dotenv()
 
-# create uploads dir if doesn't exist
-os.makedirs('uploads', exist_ok=True)
-
 app = FastAPI()
 api_router = APIRouter(prefix='/api')
 

@@ -1,4 +1,6 @@
 .venv/
 uploads/
+backend_py.egg-info/
+# runs/
 .env
 .env.production
