@@ -1,6 +1,11 @@
 # Use Python 3.8 as the base image
 FROM python:3.12.2-slim
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /app
 
