@@ -1,5 +1,5 @@
 # Use Python 3.8 as the base image
-FROM python:3.12.2-slim
+FROM python:3.12.2
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
