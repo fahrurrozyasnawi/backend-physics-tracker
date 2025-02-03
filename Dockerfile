@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /app
 
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads && chmod -R 777 /app/uploads
 
 # Copy the requirements file first (for better caching)
 COPY requirements.txt .
