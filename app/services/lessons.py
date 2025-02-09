@@ -29,12 +29,12 @@ class PendulumService(LessonsService):
             freq = self.freq
             period = 1/freq
 
-        if(period is not None):
-            y = amplitude * math.sin(2 * math.pi / period * self.time)
-            return y
         if(freq is not None):
             y = amplitude * math.sin(2 * math.pi * freq * self.time)
             return y       
+        if(period is not None):
+            y = amplitude * math.sin(2 * math.pi / period * self.time)
+            return y
 
     def calculate_freq_and_period(self, positions):
          np_positions = np.array(positions)
