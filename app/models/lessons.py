@@ -8,7 +8,7 @@ class ViscosityBodyReq(BaseModel):
 
 
 class PendulumBodyReq(BaseModel):
-    time: float
+    time: Optional[float]
     freq: float
     mass: Optional[float]
 

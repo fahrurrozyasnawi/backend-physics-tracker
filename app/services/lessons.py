@@ -14,7 +14,8 @@ class LessonsService:
         return math.sqrt((pointB[0] - pointA[0]) ** 2 + (pointB[1] - pointA[1]) ** 2)
     
     def real_distance(self, pixel_distance):
-        return pixel_distance * self.scale_factor
+        scale_factor = 0.01
+        return pixel_distance * scale_factor
 
 class PendulumService(LessonsService):
     def __init__(self, body: PendulumBodyReq):
@@ -23,7 +24,11 @@ class PendulumService(LessonsService):
         if(body.mass is not None):
             self.mass = body.mass
 
-    def calculate_formula(self, freq: float = None, period: float = None, amplitude: float = None):
+    def calculate_formula(self, freq: float = None, period: float = None, amplitude: float = None, freq_defined: bool = True):
+        if freq_defined:
+            freq = self.freq
+            period = 1/freq
+
         if(period is not None):
             y = amplitude * math.sin(2 * math.pi / period * self.time)
             return y
@@ -53,7 +58,7 @@ class ProjectileMotionService:
     def __init__(self, body: ProjectileMotionBodyReq):
         self.x_val = body.xVal
         self.y_val = body.yVal
-
+        self.g = 9.8
 
     def calculate_elevation(self, bboxes, height):
         centers = []
@@ -81,6 +86,47 @@ class ProjectileMotionService:
         theta_deg = math.degrees(theta)
 
         return theta_deg
+    
+    def get_elevation(self, vx, vy):
+        theta = math.atan2(vy, vx)
+        theta_deg = math.degrees(theta)
+
+        return theta_deg
+
+    def get_init_velocity_y(self, time):
+        g = self.g
+        v0_y = self.y_val + (g*time/2)
+
+        return v0_y
+    
+    def calculate_velocity_y(self, time):
+        v0_y = self.get_init_velocity_y(time)
+        g = self.g
+        Vy = v0_y - (g * time)
+
+        return Vy
+    
+    def get_init_velocity(self, elevation, v0_y = None, v0_x = None):
+        if v0_y is not None:
+            sin_theta = math.sin(elevation)
+            v0 = v0_y / sin_theta
+        if v0_x is not None:
+            cos_theta = math.cos(elevation)
+            v0 = v0_x / cos_theta
+        
+        return v0
+
+    def get_init_velocity_x(self, time):
+        v0_x = self.x_val / time
+
+        return v0_x
+    
+    def calculate_velocity_x(self, time):
+        return self.get_init_velocity_x(time)
+    
+    def calculate_total_velocity(self, vx, vy):
+        v_total = math.sqrt(math.pow(vx, 2) + math.pow(vy, 2))
+        return v_total
     
     def calculate_init_velocity(self, bboxes, frame_rate):
         x1, y1 = bboxes[0]
@@ -114,6 +160,11 @@ class ViscosityService(LessonsService):
         self.density_f = body.densityF
 
     def calculate_formula(self, velocity):
+        result = (2 * math.pow(self.radius, 2) * 9.8 * (self.density_t - self.density_f)) / (9 * velocity)
+
+        return result 
+    
+    def calculate_coefision(self, velocity):
         result = (2 * math.pow(self.radius, 2) * 9.8 * (self.density_t - self.density_f)) / (9 * velocity)
 
         return result 
