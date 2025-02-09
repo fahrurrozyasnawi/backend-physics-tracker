@@ -149,7 +149,7 @@ def tracking_object(body: BodyTrackObject, task_id):
 
             result = pendulum_service.calculate_formula(freq, amplitude=amplitude) 
 
-            formula_result = {"result": result, "amplitude": amplitude, "period": 1/freq}
+            formula_result = {"result": result, "amplitude": amplitude, "period": 1/body.lessonData.freq}
             print('calculate complete')
 
     data = {"result": formula_result}
