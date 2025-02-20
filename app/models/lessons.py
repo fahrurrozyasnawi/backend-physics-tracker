@@ -9,10 +9,14 @@ class ViscosityBodyReq(BaseModel):
 
 class PendulumBodyReq(BaseModel):
     time: Optional[float]
-    freq: float
+    lRope: Optional[float]
+    xInit: Optional[float]
+    xLast: Optional[float]
     mass: Optional[float]
+    theta: Optional[float]
+    type: str
 
 
 class ProjectileMotionBodyReq(BaseModel):
-    yVal: float
+    yVal: Optional[float]
     xVal: float

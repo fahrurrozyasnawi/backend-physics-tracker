@@ -1,7 +1,10 @@
 from app.models.lessons import ViscosityBodyReq, PendulumBodyReq, ProjectileMotionBodyReq
 from scipy.signal import find_peaks
 import numpy as np
+import matplotlib.pyplot as plt
 import math
+import io
+import base64
 
 class LessonsService:
     def __init__(self):
@@ -17,160 +20,521 @@ class LessonsService:
         scale_factor = 0.01
         return pixel_distance * scale_factor
 
-class PendulumService(LessonsService):
-    def __init__(self, body: PendulumBodyReq):
-        self.time = body.time
-        self.freq = body.freq
-        if(body.mass is not None):
-            self.mass = body.mass
-
-    def calculate_formula(self, freq: float = None, period: float = None, amplitude: float = None, freq_defined: bool = True):
-        if freq_defined:
-            freq = self.freq
-            period = 1/freq
-
-        if(freq is not None):
-            y = amplitude * math.sin(2 * math.pi * freq * self.time)
-            return y       
-        if(period is not None):
-            y = amplitude * math.sin(2 * math.pi / period * self.time)
-            return y
-
-    def calculate_freq_and_period(self, positions):
-         np_positions = np.array(positions)
-
-         peaks, _ = find_peaks(np_positions)
-         periods = np.diff(peaks)
-         mean_perioods = np.mean(periods)
-
-         freq = 1/mean_perioods
-
-         return (mean_perioods, freq)
-    
-    def calculate_amplitude(self, positions):
-        np_positions = np.array(positions)
-        x_eq = np.mean(np_positions)
-        amplitude = np.max(np_positions) - x_eq
-
-        return amplitude
-
-class ProjectileMotionService:
-    def __init__(self, body: ProjectileMotionBodyReq):
-        self.x_val = body.xVal
-        self.y_val = body.yVal
+class HarmonicMotionService(LessonsService):
+    def __init__(self, body: PendulumBodyReq, time):
+        self.body = body
+        self.time = time
         self.g = 9.8
+    # Spring
+    def init_spring_params(self, bbox, fps):
+        self.init_bbox = bbox[0],
+        self.rest_bbox = bbox[1:]
+        self.fps = fps
 
-    def calculate_elevation(self, bboxes, height):
-        centers = []
-        for bbox in bboxes:
-            xmin, ymin, xmax, ymax = bbox
-            x = (xmin + xmax) / 2
-            y = (ymin + ymax) / 2
-            y = height - y
+        return self
 
-            centers.append((x,y))
+    def __calculate_vertical_length(self, bbox):
+        x,y,x1,y1 = self.init_bbox
+        init_pixel_L = y1 - y
+
+        x,y,x1,y1 = bbox
+        current_pixel_L = y1 - y
         
-        x1,y1 = centers[0]
-        x2,y2 = centers[len(centers) - 1]
+        scale = init_pixel_L / self.body.xLast
+        current_L = current_pixel_L * scale
 
-        dx = x2 - x1
-        dy = y2 - y1
-
-        angle_rad = math.atan2(dy, dx)
-        angle_deg = math.degrees(angle_rad)
-
-        return angle_deg
+        return current_L
     
-    def get_elevation_from_init_velocity(self):
-        theta = math.atan2(self.Vy, self.Vx)
-        theta_deg = math.degrees(theta)
+    def get_list_L_bboxes(self):
+        list_bboxes = self.rest_bbox
+        L_list = [self.__calculate_vertical_length(bbox) for bbox in list_bboxes]
 
-        return theta_deg
+        return L_list
     
-    def get_elevation(self, vx, vy):
-        theta = math.atan2(vy, vx)
-        theta_deg = math.degrees(theta)
+    def create_spring_fig_plot(self):
+        time = self.time
+        N = len(self.rest_bbox)
+        # time_list = [i / self.fps for i in range(N)]
+        time_list = np.linspace(0, time, N)
 
-        return theta_deg
+        L_list = self.get_list_L_bboxes()
 
-    def get_init_velocity_y(self, time):
+        plt.figure(figsize=(8, 4))
+        plt.plot(time_list, L_list, marker='o', linestyle='-', color='blue', label='Panjang Pegas')
+        plt.xlabel('Waktu (detik)')
+        plt.ylabel('Panjang Pegas (cm)')
+        plt.title('Grafik Panjang Pegas Vertikal terhadap Waktu')
+        plt.legend()
+        plt.grid(True)
+
+        ioBytes = io.BytesIO()
+        plt.savefig(ioBytes, format='png')
+        ioBytes.seek(0)
+        base64Data = base64.b64encode(ioBytes.read()).decode()
+
+        return base64Data
+    
+    def get_spring_A_and_range_max(self):
+        # L_eq = self.body.xLast
+        L_values = self.get_list_L_bboxes()
+
+        L_max = max(L_values)
+        L_min = min(L_values)
+
+        A = (L_max - L_min) / 2
+        range_max = L_max - L_min
+        return (A, range_max)
+      
+    def calculate_spring_constant(self):
+        F = self.calculate_spring_F()
+        deltaX = self.body.xLast - self.body.xInit
+        
+        constant = F / deltaX
+
+        return constant
+    
+    def calculate_spring_F(self):
+        mass = self.body.mass
         g = self.g
-        v0_y = self.y_val + (g*time/2)
 
-        return v0_y
+        F = mass *g
+
+        return F
     
-    def calculate_velocity_y(self, time):
-        v0_y = self.get_init_velocity_y(time)
+    def calculate_spring_freq_deg(self):
+        constant = self.calculate_spring_constant()
+        mass = self.body.mass
+
+        freq_deg = math.sqrt(constant / mass)
+
+        return freq_deg
+    
+    def calculate_v_max(self):
+        A, _ = self.get_spring_A_and_range_max()
+        constant = self.calculate_spring_constant()
+        mass = self.body.mass
+
+        v_max = A * math.sqrt(constant / mass)
+
+        return v_max
+    
+    def calculate_spring_y(self):
+        A, _ = self.get_spring_A_and_range_max()
+        fred_deg = self.calculate_spring_freq_deg()
+        time = self.time
+
+        y = A * math.sin(fred_deg * time)
+
+        return y
+
+    def calculate_spring_v(self):
+        A, _ = self.get_spring_A_and_range_max()
+        freq_deg = self.calculate_spring_freq_deg()
+        time = self.time
+
+        v = A * freq_deg * math.cos(freq_deg * time)
+
+        return v
+    
+    def calculate_kinetic_energy(self):
+        mass = self.body.mass
+        v = self.calculate_spring_v()
+
+        k_e = 1 / 2 * mass * math.pow(v, 2)
+
+        return k_e
+    
+    def calculate_potential_energy(self):
+        constant = self.calculate_spring_constant()
+        y = self.calculate_spring_y()
+
+        e_p = 1 / 2 * constant * math.pow(y, 2)
+
+        return e_p
+    
+    def calculate_total_energy(self):
+        e_p = self.calculate_potential_energy()
+        e_k = self.calculate_kinetic_energy()
+
+        e_m = e_p + e_k
+
+        return e_m
+    
+    def calculate_spring_period(self):        
+        mass = self.body.mass
+        constant = self.calculate_spring_constant()
+
+        T = 2 * math.pi * math.sqrt(mass / constant)
+        
+        return T
+    
+    def calculate_spring_freq(self):        
+        freq_deg = self.calculate_spring_freq_deg
+
+        freq = (1 / 2 * math.pi) * freq_deg
+
+        return freq
+
+############################################################################
+
+    # Pendulum
+    def calculate_pendulum_F(self):
+        mass = self.body.mass
+        g = self.g
+
+        F = -mass * g * math.sin(self.body.theta)
+
+        return F
+    
+    def calculate_pendulum_freq_deg(self):
+        L = self.body.lRope
+        g = self.g
+
+        freq_deg = math.sqrt(g / L)
+        
+        return freq_deg
+    
+    def calculate_pendulum_freq(self):
+        freq_deg = self.calculate_pendulum_freq_deg()
+
+        freq = (1 / 2 * math.pi) * freq_deg
+
+        return freq
+    
+    def calculate_pendulum_T(self):
+        L = self.body.lRope
+        g = self.g
+
+        T = 2 * math.pi * math.sqrt(L / g)
+
+        return T
+    
+    def calculate_pendulum_y(self):
+        A = self.calculate_pendulum_amplitude()
+        theta = self.body.theta
+
+        y = A * math.sin(theta)
+
+        return y
+    
+    def init_pendulum_params(self, bboxes, positions, fps):
+        self.bboxes = bboxes
+        self.positions = positions
+        self.fps = fps
+
+        return self
+    
+    def calculate_pendulum_amplitude(self):
+        np_positions = np.array(self.positions)
+        x_eq = np.mean(np_positions)
+
+        amplitude = np.max(np_positions) - x_eq
+        
+        return amplitude
+    
+    def calculate_pendulum_theta0(self):
+        theta = self.body.theta
+        time = self.time
+        freq_deg = self.calculate_pendulum_freq_deg()
+
+        theta0 = theta / freq_deg * time
+
+        return theta0
+    
+    def calculate_pendulum_v(self):
+        freq_deg = self.calculate_pendulum_freq_deg()
+        A = self.calculate_pendulum_amplitude()
+        theta = self.body.theta
+
+        v = freq_deg * A * math.cos(theta)
+
+        return  v
+    
+    def calculate_pendulum_a(self):
+        freq_deg = self.calculate_pendulum_freq_deg()
+        y = self.calculate_pendulum_y()
+
+        a = - math.pow(freq_deg, 2) * y
+
+        return a
+    
+    def create_pendulum_fig_plot(self):
+        time = self.time
+        fps = self.fps
+
+        x_centers = [(box[0] + box[2]) / 2 for box in self.bboxes]
+        N = len(self.bboxes)
+        time_plot = np.linspace(0, time, N)
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(time_plot, x_centers, 'b-', linewidth=2)
+        plt.title('Grafik Gerak Harmonik Bandul')
+        plt.xlabel('Waktu (detik)')
+        plt.ylabel('Posisi Horizontal (pixel)')
+        plt.grid(True)
+
+        ioBytes = io.BytesIO()
+        plt.savefig(ioBytes, format='png')
+        ioBytes.seek(0)
+        base64Data = base64.b64encode(ioBytes.read()).decode()
+
+        return base64Data
+
+    
+class ProjectileMotionService:
+    def __init__(self, body: ProjectileMotionBodyReq, time):
+        self.x_val = body.xVal
+        self.g = 9.8
+        self.time = time
+
+    # def calculate_elevation(self, bboxes, frame_height):
+    #     centers = []
+    #     for bbox in bboxes:
+    #         xmin, ymin, xmax, ymax = bbox
+    #         x = (xmin + xmax) / 2
+    #         y = (ymin + ymax) / 2
+    #         # Convert image coordinate (origin at top-left) to Cartesian (origin at bottom-left)
+    #         y = frame_height - y
+    #         centers.append((x, y))
+        
+    #     # Separate the centers into x and y coordinate lists
+    #     x_coords = [pt[0] for pt in centers]
+    #     y_coords = [pt[1] for pt in centers]
+        
+    #     # If there are fewer than 3 points, fall back to using the first two points
+    #     if len(centers) < 3:
+    #         x1, y1 = centers[0]
+    #         x2, y2 = centers[1]
+    #         # Avoid division by zero
+    #         slope = (y2 - y1) / (x2 - x1) if (x2 - x1) != 0 else 0.0
+    #     else:
+    #         # Fit a quadratic polynomial: y = a*x^2 + b*x + c
+    #         coefficients = np.polyfit(x_coords, y_coords, 2)
+    #         a, b, _ = coefficients
+            
+    #         # The derivative is dy/dx = 2*a*x + b.
+    #         # Use the initial x coordinate to get the launch angle.
+    #         x_initial = x_coords[0]
+    #         slope = 2 * a * x_initial + b
+
+    #     # The angle of the tangent (i.e. the launch angle) in radians:
+    #     angle_rad = math.atan(slope)
+    #     angle_deg = math.degrees(angle_rad)
+
+    #     return angle_deg
+    
+    def calculate_elevation(self):
+        distance = self.x_val
+        centers = self.__get_list_centers()
+
+        pixel_dist = abs(centers[-1, 0] - centers[0,0])
+        convertion = distance / pixel_dist
+
+        centers_world = centers.copy()
+        centers_world[:, 0] = centers[:, 0] * convertion
+         
+        video_height = self.height
+        centers_world[:, 1] = (video_height - centers[:, 1]) * convertion
+
+        x = centers_world[:, 0]
+        y = centers_world[:, 1]
+
+        koef = np.polyfit(x, y, 2)
+
+        x0 = x[0]
+        deriv_start = 2 * koef[0] * x0 + koef[1]
+        elevation_angle_rad = np.arctan(deriv_start)
+        elevation_angle_deg = np.degrees(elevation_angle_rad)
+
+        return abs(elevation_angle_deg)
+
+    def init_params(self, bboxes, fps, frame_height):
+        self.bboxes = bboxes
+        self.fps = fps
+        self.height = frame_height
+
+        return self
+    
+    def create_plot(self):
+        time = self.time
+        distance = self.x_val
+        centers = self.__get_list_centers()
+
+        pixel_dist = abs(centers[-1, 0] - centers[0,0])
+        convertion = distance / pixel_dist
+
+        centers_world = centers.copy()
+        centers_world[:, 0] = centers[:, 0] * convertion
+
+        video_height = self.height
+        centers_world[:, 1] = (video_height - centers[:, 1]) * convertion
+        # centers_world[:, 1] = centers[:, 1] * convertion
+
+        n_frames = len(self.bboxes)
+        time_plot = np.linspace(0, time, n_frames)
+
+        x = centers_world[:, 0]
+        y = centers_world[:, 1]
+
+        coef = np.polyfit(x,y,2)
+        p_parabolic = np.poly1d(coef)
+
+        x_fit = np.linspace(x.min(), x.max(), 100)
+        y_fit = p_parabolic(x_fit)
+
+        plt.figure(figsize=(8, 6))
+        plt.scatter(x, y, color='blue', label='Titik Deteksi')
+        plt.plot(x_fit, y_fit, color='red', linewidth=2, label='Fitting Parabola')
+        plt.xlabel('Jarak Horizontal (meter)')
+        plt.ylabel('Ketinggian (meter)')
+        plt.title('Grafik Parabola Pergerakan Bola')
+        plt.legend()
+        plt.grid(True)
+
+        ioBytes = io.BytesIO()
+        plt.savefig(ioBytes, format='png')
+        ioBytes.seek(0)
+        base64Data = base64.b64encode(ioBytes.read()).decode()
+
+        return base64Data
+
+    def __get_list_centers(self):
+        bboxes = self.bboxes
+        centers = []
+
+        for bbox in bboxes:
+            x_center = (bbox[0] + bbox[2]) / 2
+            y_center = (bbox[1] + bbox[3]) / 2
+            centers.append([x_center, y_center])
+        
+        centers = np.array(centers)
+
+        return centers
+
+    def get_init_velocity_y(self):
+        elevation = self.calculate_elevation()
+        vo = self.get_init_velocity()
+
+        sin_theta = math.sin(elevation)
+        vo_y = vo * sin_theta
+
+        return vo_y
+    
+    def calculate_hmax(self):
+        elevation = self.calculate_elevation()
+        v0 = self.get_init_velocity()
+        g = self.g
+
+        hmax = (math.pow(v0, 2) * math.sin(math.pow(elevation, 2))) / 2.0 * g
+
+        return hmax
+    
+    def calculate_velocity_y(self):
+        v0_y = self.get_init_velocity_y()
+        time = self.time
         g = self.g
         Vy = v0_y - (g * time)
 
         return Vy
     
-    def get_init_velocity(self, elevation, v0_y = None, v0_x = None):
-        if v0_y is not None:
-            sin_theta = math.sin(elevation)
-            v0 = v0_y / sin_theta
-        if v0_x is not None:
-            cos_theta = math.cos(elevation)
-            v0 = v0_x / cos_theta
+    def calculate_tT(self):
+        elevation = self.calculate_elevation()
+        v0 = self.get_init_velocity()
+        g = self.g
+
+        tT = (2.0 * v0 * math.sin(elevation)) / g
+
+        return tT
+    
+    def get_init_velocity(self):
+        g = self.g
+        distance = self.x_val
+        centers = self.__get_list_centers()
+
+        pixel_dist = abs(centers[-1, 0] - centers[0,0])
+        convertion = distance / pixel_dist
+
+        centers_world = centers.copy()
+        centers_world[:, 0] = centers[:, 0] * convertion
+         
+        video_height = self.height
+        centers_world[:, 1] = (video_height - centers[:, 1]) * convertion
+
+        x = centers_world[:, 0]
+        y = centers_world[:, 1]
+
+        koef = np.polyfit(x, y, 2)
+
+        x0 = x[0]
+        # Turunan dari y terhadap x: dy/dx = 2a*x + b
+        deriv_start = 2 * koef[0] * x0 + koef[1]
+        elevation_angle_rad = np.arctan(deriv_start)
+
+        if koef[0] < 0:
+            v0 = np.sqrt(-g / (2 * koef[0] * (np.cos(elevation_angle_rad)**2)))
+            print("Kecepatan awal v0: {:.2f} m/s".format(v0))
+        else:
+            v0 = 0
+            print("Koefisien parabola a tidak valid (harus negatif) untuk perhitungan v0.")
         
         return v0
 
-    def get_init_velocity_x(self, time):
-        v0_x = self.x_val / time
+    def get_init_velocity_x(self):
+        v0 = self.get_init_velocity()
+        elevation = self.calculate_elevation()
+        v0_x = v0 * math.cos(elevation)
 
         return v0_x
     
-    def calculate_velocity_x(self, time):
-        return self.get_init_velocity_x(time)
+    def calculate_velocity_x(self):
+        return self.get_init_velocity_x()
     
-    def calculate_total_velocity(self, vx, vy):
+    def calculate_total_velocity(self):
+        vx = self.calculate_velocity_x()
+        vy = self.calculate_velocity_y()
+
         v_total = math.sqrt(math.pow(vx, 2) + math.pow(vy, 2))
         return v_total
-    
-    def calculate_init_velocity(self, bboxes, frame_rate):
-        x1, y1 = bboxes[0]
-        x2, y2 = bboxes[1]
 
-        delta_t = 1 / frame_rate
+    def calculate_y(self):
+        time = self.time
+        v0_y = self.get_init_velocity_y()
 
-        self.Vx = (x2-x1) / delta_t
-        self.Vy = (y2-y1) / delta_t
+        g = self.g
+        y = v0_y * time - (g * time**2) / 2
+        # y = vo * math.sin(theta) * time - g * time
 
-        Vo = math.sqrt(self.Vx**2 + self.Vy**2)
-
-        return Vo
-
-    def calculate_by_x(self, vo, theta, time):
-        # Vx = vo * math.cos(theta) * time
-        Vx = vo * math.cos(theta)
-        return Vx
-
-    def calculate_by_y(self, vo, theta, time):
-        g = 9.8
-        # Vy = vo * math.sin(theta) * time - (g * time**2) / 2
-        Vy = vo * math.sin(theta) * time - g * time
-
-        return Vy
+        return y
 
 class ViscosityService(LessonsService):
-    def __init__(self, body: ViscosityBodyReq):
+    def __init__(self, body: ViscosityBodyReq, time):
         self.radius = body.radius
         self.density_t = body.densityT
         self.density_f = body.densityF
+        self.time = time
 
-    def calculate_formula(self, velocity):
-        result = (2 * math.pow(self.radius, 2) * 9.8 * (self.density_t - self.density_f)) / (9 * velocity)
+    def calculate_formula(self):
+        velocity = self.calculate_velocity()
+        coef = self.calculate_coefision()
 
-        return result 
+        viscosity = 6 * math.pi * coef * self.radius * velocity
+
+        return viscosity
     
-    def calculate_coefision(self, velocity):
+    def calculate_coefision(self):
+        velocity = self.calculate_velocity()
         result = (2 * math.pow(self.radius, 2) * 9.8 * (self.density_t - self.density_f)) / (9 * velocity)
 
-        return result 
+        return result
 
-    def calculate_velocity(self, keypoints, time):
-        keypoint_A, keypoint_B = keypoints
+    def init_keypoints(self, keypoints):
+        self.keypoints = keypoints
+
+        return self
+
+    def calculate_velocity(self):
+        time = self.time
+        keypoint_A, keypoint_B = self.keypoints
 
         euc_dist = super().euclidean_distance(keypoint_A, keypoint_B)
         dist = super().real_distance(euc_dist)

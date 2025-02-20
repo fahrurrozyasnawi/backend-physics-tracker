@@ -8,6 +8,8 @@ from app.routers import video, upload
 
 load_dotenv()
 
+os.environ['SIEVE_API_KEY'] = "-T8SsH54Wk_IDJMdjP7F7Y-XwDMQBn8Lte4RAYGyWWY"
+
 app = FastAPI()
 api_router = APIRouter(prefix='/api')
 

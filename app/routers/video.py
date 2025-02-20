@@ -9,7 +9,7 @@ from app.models.api import CustomResponse
 from app.models.video import BodyExtractFrame, BodyTrackObject
 from app.services.video import VideoServices
 from app.services.tracker import TrackerService
-from app.services.lessons import ViscosityService, PendulumService, ProjectileMotionService
+from app.services.lessons import ViscosityService, HarmonicMotionService, ProjectileMotionService
 
 router = APIRouter(
     prefix='/video',
@@ -19,67 +19,6 @@ router = APIRouter(
 
 task_results: Dict[str, dict] = OrderedDict()
 
-# def tracking_object(body: BodyTrackObject, task_id):
-#     video_path = os.path.join(get_static_dir(), body.path[1:], body.filename)
-#     filename, ext = os.path.splitext(body.filename)
-#     generated_filename = f'{filename}-generated{ext}'
-#     generated_path = os.path.join(get_static_dir(), body.path[1:], generated_filename)
-#     # output_filename = f'{filename}-result{ext}'
-#     # output_path = os.path.join(get_static_dir(), body.path[1:], output_filename)
-
-#     print('video path', video_path)
-#     print('generated path', generated_path)
-#     tracker_service = TrackerService(generated_path)
-#     video_service = VideoServices(video_path)
-    
-#     formula_result = 0
-#     task_progress[task_id] = 0
-#     tracker_service.init_task(task_id)
-#     try:
-#         bbox = video_service.convert_bbox_obj_to_xyxy(body.bbox)
-#         print('bbox',bbox)
-#         bboxes, keypoints = tracker_service.predict(bbox)
-#         tracker_result = tracker_service.generate_video_result(video_path)
-
-#         if(body.lessonType == 'viscosity'):
-#             viscosity_service = ViscosityService(body.lessonData)
-#             pointA = video_service.get_center_from_bbox_xyxy(bboxes[0])
-#             pointB = video_service.get_center_from_bbox_xyxy(bboxes[len(bboxes) - 1])
-#             time = body.timeEnd - body.timeStart
-
-#             velocity = viscosity_service.calculate_velocity(pointA, pointB, time)
-#             formula_result = viscosity_service.calculate_formula(velocity)
-
-#         if(body.lessonType == 'projectile-motion'):
-#             projectile_motion_service = ProjectileMotionService(body.lessonData)
-#             fps = video_service.get_fps()
-#             time = body.timeEnd - body.timeStart
-#             V0 = projectile_motion_service.calculate_init_velocity(bboxes, fps)
-#             elevation = projectile_motion_service.get_elevation_from_init_velocity(V0)
-                        
-#             result_by_x = projectile_motion_service.calculate_by_x(V0, elevation, time)
-#             result_by_y = projectile_motion_service.calculate_by_y(V0, elevation, time)
-
-#             formula_result = {"x": result_by_x, "y": result_by_y}
-
-
-#         if(body.lessonType == 'pendulum'):
-#             pendulum_service = PendulumService(body.lessonData)
-#             x_positions = []
-#             for bbox in bboxes:
-#                 x1, y1, x2, y2 = bbox
-#                 x_positions.append((x1))
-            
-#             freq = pendulum_service.calculate_freq_and_period(x_positions)
-#             amplitude = pendulum_service.calculate_amplitude(x_positions)
-
-#             formula_result = pendulum_service.calculate_formula(freq, amplitude=amplitude) 
-
-#         data = {"result": formula_result, "video": tracker_result}
-#         return data
-#     except:
-#         raise HTTPException(
-#             status_code=400, detail='Failed to tracking object!')
 
 def cleanup_old_entries():
     if len(task_results) > 7:
@@ -100,56 +39,120 @@ def tracking_object(body: BodyTrackObject, task_id):
     formula_result = 0
     if(task_progress['progress'] == 0.8):
         bboxes = tracker_service.get_bboxes_result()
+        time = body.timeEnd - body.timeStart
+        fps = video_service.get_fps()
+        width, height = video_service.get_resolution()
         print('lesson type', body.lessonType)
         if(body.lessonType == 'viscosity'):
             print('calculate viscosity')
-            viscosity_service = ViscosityService(body.lessonData)
+            viscosity_service = ViscosityService(body.lessonData, time)
             pointA = video_service.get_center_from_bbox_xyxy(bboxes[0])
             pointB = video_service.get_center_from_bbox_xyxy(bboxes[len(bboxes) - 1])
             points = (pointA, pointB)
-            time = body.timeEnd - body.timeStart
+            
+            viscosity_service = viscosity_service.init_keypoints(points)
 
-            velocity = viscosity_service.calculate_velocity(points, time)
-            viscosity = viscosity_service.calculate_formula(velocity)
+            velocity = viscosity_service.calculate_velocity()
+            coef = viscosity_service.calculate_coefision()
+            viscosity = viscosity_service.calculate_formula()
+            # graph = viscosity_service.cre
 
-            formula_result = {"viscosity": viscosity, "velocity": velocity}
+            formula_result = {
+                "viscosity": viscosity, 
+                "velocity": velocity, 
+                "coef": coef
+            }
             print('calculate complete')
 
         if(body.lessonType == 'projectile-motion'):
             print('calculate projectile motion')
-            projectile_motion_service = ProjectileMotionService(body.lessonData)
-            # fps = video_service.get_fps()
-            time = body.timeEnd - body.timeStart
+            
+            projectile_motion_service = ProjectileMotionService(body.lessonData, time)
 
-            vy = projectile_motion_service.calculate_velocity_y(time)
-            vx = projectile_motion_service.calculate_velocity_x(time)
-            elevation = projectile_motion_service.get_elevation(vx,vy)
+            projectile_motion_service = projectile_motion_service.init_params(bboxes, fps, height)
 
-            v0_y = projectile_motion_service.get_init_velocity_y(time)
-            v0 = projectile_motion_service.get_init_velocity(elevation, v0_y=v0_y)
-            # v0 = projectile_motion_service.calculate_init_velocity(bboxes, fps)
-            # elevation = projectile_motion_service.get_elevation_from_init_velocity(v0)
-                        
-            # result_by_x = projectile_motion_service.calculate_by_x(v0, elevation, time)
-            # result_by_y = projectile_motion_service.calculate_by_y(v0, elevation, time)
+            elevation = projectile_motion_service.calculate_elevation()
+            v0_x = projectile_motion_service.get_init_velocity_x()
+            v0 = projectile_motion_service.get_init_velocity()
+            v0_y = projectile_motion_service.get_init_velocity_y()
 
-            formula_result = {"vx": vx, "vy": vy, "elevation": elevation, "v0": v0}
+            vx = v0_x
+            vy = projectile_motion_service.calculate_velocity_y()
+            
+            y = projectile_motion_service.calculate_y()
+            hmax = projectile_motion_service.calculate_hmax()
+            tT = projectile_motion_service.calculate_tT()
+            graph = projectile_motion_service.create_plot()
+
+            formula_result = {
+                "vx": vx, 
+                "vy": vy, 
+                "elevation": elevation, 
+                "v0": v0, 
+                "y": y, 
+                "hmax": hmax, 
+                "tT": tT,
+                "graph": graph
+            }
             print('calculate complete')
 
         if(body.lessonType == 'pendulum'):
             print('calculate pendulum')
-            pendulum_service = PendulumService(body.lessonData)
-            x_positions = []
-            for bbox in bboxes:
-                x1, y1, x2, y2 = bbox
-                x_positions.append((x1))
-            
-            freq = pendulum_service.calculate_freq_and_period(x_positions)
-            amplitude = pendulum_service.calculate_amplitude(x_positions)
+            type = body.lessonData.type
+            harmonic_motion_service = HarmonicMotionService(body.lessonData, time)
+            if type == 'bandul':
+                x_positions = []
+                for bbox in bboxes:
+                    x1, y1, x2, y2 = bbox
+                    x_positions.append((x1 + x2) / 2)
 
-            result = pendulum_service.calculate_formula(freq, amplitude=amplitude) 
+                harmonic_motion_service = harmonic_motion_service.init_pendulum_params(bboxes, x_positions, fps)
+                
+                amplitude = harmonic_motion_service.calculate_pendulum_amplitude()
+                y = harmonic_motion_service.calculate_pendulum_y()
+                freq_deg = harmonic_motion_service.calculate_spring_freq_deg()
+                freq = harmonic_motion_service.calculate_spring_freq()
+                period = harmonic_motion_service.calculate_pendulum_T()
+                graph = harmonic_motion_service.create_pendulum_fig_plot()
 
-            formula_result = {"result": result, "amplitude": amplitude, "period": 1/body.lessonData.freq}
+                formula_result = {
+                    "y": y, 
+                    "amplitude": amplitude, 
+                    "period": period,
+                    "freq": freq,
+                    "freq_deg": freq_deg,
+                    "graph": graph,
+                    }
+
+            if type == 'pegas':
+                harmonic_motion_service = harmonic_motion_service.init_spring_params(bboxes, fps)
+
+                constant = harmonic_motion_service.calculate_spring_constant()
+                F = harmonic_motion_service.calculate_spring_F()
+                freq_deg = harmonic_motion_service.calculate_spring_freq_deg()
+                freq = harmonic_motion_service.calculate_spring_freq()
+                period = harmonic_motion_service.calculate_spring_period()
+                v = harmonic_motion_service.calculate_spring_v()
+                v_max = harmonic_motion_service.calculate_v_max()
+                k_e = harmonic_motion_service.calculate_kinetic_energy()
+                p_e = harmonic_motion_service.calculate_potential_energy()
+                m_e = harmonic_motion_service.calculate_total_energy()
+                graph = harmonic_motion_service.create_spring_fig_plot()
+
+                formula_result = {
+                    "constant": constant,
+                    "F": F,
+                    "freq_deg": freq_deg,
+                    "freq": freq,
+                    "period": period,
+                    "v": v,
+                    "v_max": v_max,
+                    "k_e": k_e,
+                    "p_e": p_e,
+                    "m_e": m_e,                     
+                    "graph": graph,                     
+                }
+
             print('calculate complete')
 
     data = {"result": formula_result}
