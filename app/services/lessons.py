@@ -74,6 +74,25 @@ class HarmonicMotionService(LessonsService):
 
         return base64Data
     
+    def calculate_oscilation_counts(self):
+        time = self.time
+        N = len(self.rest_bbox)
+        time_list = np.linspace(0, time ,N)
+        L_list = self.get_list_L_bboxes()
+
+        peaks, _ = find_peaks(L_list)
+        peak_times = time_list[peaks]
+
+        if len(peak_times) > 1:
+            periods = np.diff(peak_times)
+            avg_period = np.mean(periods)
+            oscilation_count = time / avg_period
+        else:
+            avg_period = None
+            oscilation_count = 0
+
+        return oscilation_count
+
     def get_spring_A_and_range_max(self):
         # L_eq = self.body.xLast
         L_values = self.get_list_L_bboxes()
@@ -225,12 +244,12 @@ class HarmonicMotionService(LessonsService):
         return self
     
     def calculate_pendulum_amplitude(self):
-        np_positions = np.array(self.positions)
-        x_eq = np.mean(np_positions)
-
-        amplitude = np.max(np_positions) - x_eq
+        centers = np.array(self.positions)
+        center_max = max(centers)
+        center_min = min(centers)
+        amplitude_pixels = (center_max - center_min) / 2.0
         
-        return amplitude
+        return amplitude_pixels
     
     def calculate_pendulum_theta0(self):
         theta = self.body.theta

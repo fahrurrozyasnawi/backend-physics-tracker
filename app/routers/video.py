@@ -110,8 +110,8 @@ def tracking_object(body: BodyTrackObject, task_id):
                 
                 amplitude = harmonic_motion_service.calculate_pendulum_amplitude()
                 y = harmonic_motion_service.calculate_pendulum_y()
-                freq_deg = harmonic_motion_service.calculate_spring_freq_deg()
-                freq = harmonic_motion_service.calculate_spring_freq()
+                freq_deg = harmonic_motion_service.calculate_pendulum_freq_deg()
+                freq = harmonic_motion_service.calculate_pendulum_freq()
                 period = harmonic_motion_service.calculate_pendulum_T()
                 graph = harmonic_motion_service.create_pendulum_fig_plot()
 
