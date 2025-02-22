@@ -38,7 +38,7 @@ def tracking_object(body: BodyTrackObject, task_id):
     
     formula_result = 0
     if(task_progress['progress'] == 0.8):
-        bboxes = tracker_service.get_bboxes_result()
+        bboxes = tracker_service.get_bboxes_result()      
         time = body.timeEnd - body.timeStart
         fps = video_service.get_fps()
         width, height = video_service.get_resolution()

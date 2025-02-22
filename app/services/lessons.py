@@ -27,7 +27,7 @@ class HarmonicMotionService(LessonsService):
         self.g = 9.8
     # Spring
     def init_spring_params(self, bbox, fps):
-        self.init_bbox = bbox[0],
+        self.init_bbox = bbox[0]
         self.rest_bbox = bbox[1:]
         self.fps = fps
 
@@ -188,7 +188,7 @@ class HarmonicMotionService(LessonsService):
         return T
     
     def calculate_spring_freq(self):        
-        freq_deg = self.calculate_spring_freq_deg
+        freq_deg = self.calculate_spring_freq_deg()
 
         freq = (1 / 2 * math.pi) * freq_deg
 
