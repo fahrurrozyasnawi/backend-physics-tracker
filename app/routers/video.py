@@ -86,12 +86,15 @@ def tracking_object(body: BodyTrackObject, task_id):
 
             formula_result = {
                 "vx": vx, 
-                "vy": vy, 
+                "vy": vy,
+                "v0_y": v0_y, 
+                "v0_x": v0_x, 
                 "elevation": elevation, 
                 "v0": v0, 
                 "y": y, 
                 "hmax": hmax, 
                 "tT": tT,
+                "ty_max": tT / 2,
                 "graph": graph
             }
             print('calculate complete')

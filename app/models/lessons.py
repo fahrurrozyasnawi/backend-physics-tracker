@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Any
 
 class ViscosityBodyReq(BaseModel):
+    distance: float
     radius: float
     densityT: float
     densityF: float

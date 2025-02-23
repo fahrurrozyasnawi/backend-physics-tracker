@@ -396,7 +396,7 @@ class ProjectileMotionService:
 
     def get_init_velocity_y(self):
         elevation = self.calculate_elevation()
-        vo = self.get_init_velocity()
+        vo = self.calculate_init_velocity()
 
         sin_theta = math.sin(math.radians(elevation))
         vo_y = vo * sin_theta
@@ -405,10 +405,11 @@ class ProjectileMotionService:
     
     def calculate_hmax(self):
         elevation = self.calculate_elevation()
-        v0 = self.get_init_velocity()
+        v0 = self.calculate_init_velocity()
         g = self.g
 
-        hmax = (math.pow(v0, 2) * math.sin(math.radians(math.pow(elevation, 2)))) / 2.0 * g
+        # hmax = (math.pow(v0, 2) * math.sin(math.radians(math.pow(elevation, 2)))) / 2.0 * g
+        hmax = math.pow(v0 * math.sin(math.radians(elevation)),2) / 2 * g
 
         return hmax
     
@@ -422,7 +423,7 @@ class ProjectileMotionService:
     
     def calculate_tT(self):
         elevation = self.calculate_elevation()
-        v0 = self.get_init_velocity()
+        v0 = self.calculate_init_velocity()
         g = self.g
 
         tT = (2.0 * v0 * math.sin(math.radians(elevation))) / g
@@ -461,9 +462,18 @@ class ProjectileMotionService:
             print("Koefisien parabola a tidak valid (harus negatif) untuk perhitungan v0.")
         
         return v0
+    
+    def calculate_init_velocity(self):
+        time = self.time
+        g = self.g
+        elevation = self.calculate_elevation()
+
+        v0 = (time * g) / (2 * math.sin(math.radians(elevation)))
+        
+        return v0
 
     def get_init_velocity_x(self):
-        v0 = self.get_init_velocity()
+        v0 = self.calculate_init_velocity()
         elevation = self.calculate_elevation()
         v0_x = v0 * math.cos(elevation)
 
@@ -491,6 +501,7 @@ class ProjectileMotionService:
 
 class ViscosityService(LessonsService):
     def __init__(self, body: ViscosityBodyReq, time):
+        self.distance = body.distance
         self.radius = body.radius
         self.density_t = body.densityT
         self.density_f = body.densityF
@@ -517,10 +528,11 @@ class ViscosityService(LessonsService):
 
     def calculate_velocity(self):
         time = self.time
-        keypoint_A, keypoint_B = self.keypoints
+        dist = self.distance
+        # keypoint_A, keypoint_B = self.keypoints
 
-        euc_dist = super().euclidean_distance(keypoint_A, keypoint_B)
-        dist = super().real_distance(euc_dist)
+        # euc_dist = super().euclidean_distance(keypoint_A, keypoint_B)
+        # dist = super().real_distance(euc_dist)
 
         velocity = dist / time
 
