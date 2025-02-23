@@ -142,7 +142,7 @@ class HarmonicMotionService(LessonsService):
         fred_deg = self.calculate_spring_freq_deg()
         time = self.time
 
-        y = A * math.sin(fred_deg * time)
+        y = A * math.sin(math.radians(fred_deg * time))
 
         return y
 
@@ -201,7 +201,7 @@ class HarmonicMotionService(LessonsService):
         mass = self.body.mass
         g = self.g
 
-        F = -mass * g * math.sin(self.body.theta)
+        F = -mass * g * math.sin(math.radians(self.body.theta))
 
         return F
     
@@ -232,7 +232,7 @@ class HarmonicMotionService(LessonsService):
         A = self.calculate_pendulum_amplitude()
         theta = self.body.theta
 
-        y = A * math.sin(theta)
+        y = A * math.sin(math.radians(theta))
 
         return y
     
@@ -305,42 +305,6 @@ class ProjectileMotionService:
         self.x_val = body.xVal
         self.g = 9.8
         self.time = time
-
-    # def calculate_elevation(self, bboxes, frame_height):
-    #     centers = []
-    #     for bbox in bboxes:
-    #         xmin, ymin, xmax, ymax = bbox
-    #         x = (xmin + xmax) / 2
-    #         y = (ymin + ymax) / 2
-    #         # Convert image coordinate (origin at top-left) to Cartesian (origin at bottom-left)
-    #         y = frame_height - y
-    #         centers.append((x, y))
-        
-    #     # Separate the centers into x and y coordinate lists
-    #     x_coords = [pt[0] for pt in centers]
-    #     y_coords = [pt[1] for pt in centers]
-        
-    #     # If there are fewer than 3 points, fall back to using the first two points
-    #     if len(centers) < 3:
-    #         x1, y1 = centers[0]
-    #         x2, y2 = centers[1]
-    #         # Avoid division by zero
-    #         slope = (y2 - y1) / (x2 - x1) if (x2 - x1) != 0 else 0.0
-    #     else:
-    #         # Fit a quadratic polynomial: y = a*x^2 + b*x + c
-    #         coefficients = np.polyfit(x_coords, y_coords, 2)
-    #         a, b, _ = coefficients
-            
-    #         # The derivative is dy/dx = 2*a*x + b.
-    #         # Use the initial x coordinate to get the launch angle.
-    #         x_initial = x_coords[0]
-    #         slope = 2 * a * x_initial + b
-
-    #     # The angle of the tangent (i.e. the launch angle) in radians:
-    #     angle_rad = math.atan(slope)
-    #     angle_deg = math.degrees(angle_rad)
-
-    #     return angle_deg
     
     def calculate_elevation(self):
         distance = self.x_val
@@ -434,7 +398,7 @@ class ProjectileMotionService:
         elevation = self.calculate_elevation()
         vo = self.get_init_velocity()
 
-        sin_theta = math.sin(elevation)
+        sin_theta = math.sin(math.radians(elevation))
         vo_y = vo * sin_theta
 
         return vo_y
@@ -444,7 +408,7 @@ class ProjectileMotionService:
         v0 = self.get_init_velocity()
         g = self.g
 
-        hmax = (math.pow(v0, 2) * math.sin(math.pow(elevation, 2))) / 2.0 * g
+        hmax = (math.pow(v0, 2) * math.sin(math.radians(math.pow(elevation, 2)))) / 2.0 * g
 
         return hmax
     
@@ -461,7 +425,7 @@ class ProjectileMotionService:
         v0 = self.get_init_velocity()
         g = self.g
 
-        tT = (2.0 * v0 * math.sin(elevation)) / g
+        tT = (2.0 * v0 * math.sin(math.radians(elevation))) / g
 
         return tT
     
