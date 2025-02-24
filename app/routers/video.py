@@ -73,7 +73,7 @@ def tracking_object(body: BodyTrackObject, task_id):
 
             elevation = projectile_motion_service.calculate_elevation()
             v0_x = projectile_motion_service.get_init_velocity_x()
-            v0 = projectile_motion_service.get_init_velocity()
+            v0 = projectile_motion_service.calculate_init_velocity()
             v0_y = projectile_motion_service.get_init_velocity_y()
 
             vx = v0_x

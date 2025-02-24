@@ -409,7 +409,9 @@ class ProjectileMotionService:
         g = self.g
 
         # hmax = (math.pow(v0, 2) * math.sin(math.radians(math.pow(elevation, 2)))) / 2.0 * g
-        hmax = math.pow(v0 * math.sin(math.radians(elevation)),2) / 2 * g
+        first_line = math.pow(v0 * math.sin(math.radians(elevation)), 2)
+        second_line = 2 * g
+        hmax = first_line / second_line
 
         return hmax
     
@@ -475,7 +477,8 @@ class ProjectileMotionService:
     def get_init_velocity_x(self):
         v0 = self.calculate_init_velocity()
         elevation = self.calculate_elevation()
-        v0_x = v0 * math.cos(elevation)
+
+        v0_x = v0 * math.cos(math.radians(elevation))
 
         return v0_x
     
@@ -487,6 +490,7 @@ class ProjectileMotionService:
         vy = self.calculate_velocity_y()
 
         v_total = math.sqrt(math.pow(vx, 2) + math.pow(vy, 2))
+        
         return v_total
 
     def calculate_y(self):
