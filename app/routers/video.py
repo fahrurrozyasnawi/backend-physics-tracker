@@ -93,7 +93,7 @@ def tracking_object(body: BodyTrackObject, task_id):
                 "v0": v0, 
                 "y": y, 
                 "hmax": hmax, 
-                "tT": tT,
+                "tT": time,
                 "ty_max": tT / 2,
                 "graph": graph
             }
