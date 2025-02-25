@@ -105,18 +105,26 @@ class HarmonicMotionService(LessonsService):
         return (A, range_max)
       
     def calculate_spring_constant(self):
-        F = self.calculate_spring_F()
+        F = self.__calculate_spring_F()
         deltaX = self.body.xLast - self.body.xInit
         
         constant = F / deltaX
 
         return constant
     
-    def calculate_spring_F(self):
+    def __calculate_spring_F(self):
         mass = self.body.mass
         g = self.g
 
         F = mass *g
+
+        return F
+    
+    def calculate_spring_F(self):
+        constant = self.calculate_spring_constant()
+        deltaX = self.body.xLast - self.body.xInit
+
+        F = - constant * deltaX
 
         return F
     
@@ -190,7 +198,7 @@ class HarmonicMotionService(LessonsService):
     def calculate_spring_freq(self):        
         freq_deg = self.calculate_spring_freq_deg()
 
-        freq = (1 / 2 * math.pi) * freq_deg
+        freq = ((1 / 2) * math.pi) * freq_deg
 
         return freq
 
@@ -423,14 +431,41 @@ class ProjectileMotionService:
 
         return Vy
     
+    def calculate_velocity_y_v2(self):
+        v0_y = self.get_init_velocity_y()
+        time = self.time
+        g = self.g
+
+        # Vy = v0_y - (g * time)
+        Vy = f"{v0_y} - {g}t"
+
+        return Vy
+    
     def calculate_tT(self):
         elevation = self.calculate_elevation()
         v0 = self.calculate_init_velocity()
         g = self.g
 
-        tT = (2.0 * v0 * math.sin(math.radians(elevation))) / g
+        first_line = 2 * v0 * math.sin(math.radians(elevation))
+        tT = first_line / g
 
         return tT
+    
+    def calculate_ty_max(self):
+        tx_max = self.calculate_tT()
+
+        ty_max = tx_max / 2
+
+        return ty_max
+   
+    # def calculate_tT(self):
+    #     elevation = self.calculate_elevation()
+    #     v0 = self.calculate_init_velocity()
+    #     g = self.g
+
+    #     tT = (2.0 * v0 * math.sin(math.radians(elevation))) / g
+
+    #     return tT
     
     def get_init_velocity(self):
         g = self.g
@@ -467,12 +502,25 @@ class ProjectileMotionService:
     
     def calculate_init_velocity(self):
         time = self.time
+        xmax = self.x_val
         g = self.g
         elevation = self.calculate_elevation()
 
-        v0 = (time * g) / (2 * math.sin(math.radians(elevation)))
+        first_line = xmax * g
+        second_line = math.sin(math.radians(2 * elevation))
+
+        v0 = math.sqrt(first_line / second_line)
         
         return v0
+    
+    # def calculate_init_velocity(self):
+    #     time = self.time
+    #     g = self.g
+    #     elevation = self.calculate_elevation()
+
+    #     v0 = (time * g) / (2 * math.sin(math.radians(elevation)))
+        
+    #     return v0
 
     def get_init_velocity_x(self):
         v0 = self.calculate_init_velocity()

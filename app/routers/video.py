@@ -77,11 +77,13 @@ def tracking_object(body: BodyTrackObject, task_id):
             v0_y = projectile_motion_service.get_init_velocity_y()
 
             vx = v0_x
-            vy = projectile_motion_service.calculate_velocity_y()
+            # vy = projectile_motion_service.calculate_velocity_y()
+            vy = projectile_motion_service.calculate_velocity_y_v2()
             
             y = projectile_motion_service.calculate_y()
             hmax = projectile_motion_service.calculate_hmax()
             tT = projectile_motion_service.calculate_tT()
+            ty_max = projectile_motion_service.calculate_ty_max()
             graph = projectile_motion_service.create_plot()
 
             formula_result = {
@@ -93,8 +95,9 @@ def tracking_object(body: BodyTrackObject, task_id):
                 "v0": v0, 
                 "y": y, 
                 "hmax": hmax, 
-                "tT": time,
-                "ty_max": tT / 2,
+                "tT": tT,
+                # "ty_max": tT / 2,
+                "ty_max": ty_max,
                 "graph": graph
             }
             print('calculate complete')
@@ -122,7 +125,7 @@ def tracking_object(body: BodyTrackObject, task_id):
                     "y": y, 
                     "amplitude": amplitude, 
                     "period": period,
-                    "freq": freq,
+                    "freq": 1 / period,
                     "freq_deg": freq_deg,
                     "graph": graph,
                     }
@@ -147,7 +150,7 @@ def tracking_object(body: BodyTrackObject, task_id):
                     "F": F,
                     "freq_deg": freq_deg,
                     "freq": freq,
-                    "period": period,
+                    "period": 1 / freq,
                     "v": v,
                     "v_max": v_max,
                     "k_e": k_e,
