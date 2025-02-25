@@ -116,6 +116,7 @@ def tracking_object(body: BodyTrackObject, task_id):
                 
                 amplitude = harmonic_motion_service.calculate_pendulum_amplitude()
                 y = harmonic_motion_service.calculate_pendulum_y()
+                F = harmonic_motion_service.calculate_pendulum_F()
                 freq_deg = harmonic_motion_service.calculate_pendulum_freq_deg()
                 freq = harmonic_motion_service.calculate_pendulum_freq()
                 period = harmonic_motion_service.calculate_pendulum_T()
@@ -123,6 +124,7 @@ def tracking_object(body: BodyTrackObject, task_id):
 
                 formula_result = {
                     "y": y, 
+                    "F": F, 
                     "amplitude": amplitude, 
                     "period": period,
                     "freq": 1 / period,
@@ -149,8 +151,8 @@ def tracking_object(body: BodyTrackObject, task_id):
                     "constant": constant,
                     "F": F,
                     "freq_deg": freq_deg,
-                    "freq": freq,
-                    "period": 1 / freq,
+                    "freq": 1 / period,
+                    "period": period,
                     "v": v,
                     "v_max": v_max,
                     "k_e": k_e,
