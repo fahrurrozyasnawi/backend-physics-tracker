@@ -431,6 +431,15 @@ class ProjectileMotionService:
 
         return Vy
     
+    def calculate_real_t(self):
+        tx_max = self.calculate_tT()
+        duration = self.time
+
+        real_duration = tx_max / duration
+
+        return real_duration
+
+    
     def calculate_velocity_y_v2(self):
         v0_y = self.get_init_velocity_y()
         time = self.time

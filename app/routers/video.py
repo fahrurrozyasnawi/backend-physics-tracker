@@ -84,6 +84,7 @@ def tracking_object(body: BodyTrackObject, task_id):
             hmax = projectile_motion_service.calculate_hmax()
             tT = projectile_motion_service.calculate_tT()
             ty_max = projectile_motion_service.calculate_ty_max()
+            real_duration = projectile_motion_service.calculate_real_t()
             graph = projectile_motion_service.create_plot()
 
             formula_result = {
@@ -96,6 +97,7 @@ def tracking_object(body: BodyTrackObject, task_id):
                 "y": y, 
                 "hmax": hmax, 
                 "tT": tT,
+                "real_duration": real_duration,
                 # "ty_max": tT / 2,
                 "ty_max": ty_max,
                 "graph": graph
