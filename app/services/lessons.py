@@ -446,7 +446,7 @@ class ProjectileMotionService:
         g = self.g
 
         # Vy = v0_y - (g * time)
-        Vy = f"{v0_y} - {g}t"
+        Vy = f"{round(v0_y, 2)} - {g}t"
 
         return Vy
     
